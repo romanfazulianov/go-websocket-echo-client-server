@@ -18,12 +18,10 @@ func UserInputHandler() {
 	for {
 		if input, err := reader.ReadString('\n'); err != nil {
 			log.Print(err)
-			break
 		} else {
 			if ws != nil {
 				if _, err := ws.Write([]byte(input)); err != nil {
 					log.Print(err)
-					break
 				}
 			} else {
 				log.Print("Connection closed. Try later!")
