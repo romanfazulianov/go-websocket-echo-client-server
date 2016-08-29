@@ -49,9 +49,9 @@ func main() {
 	var err error
 	origin := "http://localhost/"
 	url := "ws://localhost:12345/echo"
+	go UserInputHandler()
 	for {
 		log.Print("Trying to connect...")
-		go UserInputHandler()
 		if ws, err = websocket.Dial(url, "", origin); err != nil {
 			log.Print(err)
 			time.Sleep(time.Second * 5)
