@@ -9,33 +9,47 @@ import (
 
 var cons []*websocket.Conn
 
-// EchoServer echoes the data received on the WebSocket.
-func EchoServer(ws *websocket.Conn) {
-	log.Print(ws)
+// MultiServer sends the data received on the WebSocket to all connections.
+func MultiServer(ws *websocket.Conn) {
+	log.Printf("Connected %v", ws)
 	cons = append(cons, ws)
-	handleEchoes(ws)
+	handleMessages(ws)
 }
 
-func handleEchoes(ws *websocket.Conn) {
+func splice(cons []*websocket.Conn, ws *websocket.Conn) []*websocket.Conn {
+	newCons := []*websocket.Conn{}
+	for _, con := range cons {
+		if con != ws {
+			newCons = append(newCons, con)
+		} else {
+			log.Printf("Disconnected %v", ws)
+		}
+	}
+	return newCons
+}
+
+func handleMessages(ws *websocket.Conn) {
 	for {
 		msg := make([]byte, 1024)
 		if _, err := ws.Read(msg); err != nil {
-			log.Print(err)
+			ws.Close()
+			cons = splice(cons, ws)
+			break
 		}
 		log.Printf("Received: %s", msg)
 		for _, wsconn := range cons {
 			if _, err := wsconn.Write(msg); err != nil {
-				log.Print(err)
 				wsconn.Close()
+				cons = splice(cons, wsconn)
+				break
 			}
 		}
 	}
 }
 
-// This example demonstrates a trivial echo server.
 func main() {
 	log.Print("Starting server...")
-	http.Handle("/multi", websocket.Handler(EchoServer))
+	http.Handle("/multi", websocket.Handler(MultiServer))
 	err := http.ListenAndServe(":12345", nil)
 	if err != nil {
 		panic("ListenAndServe: " + err.Error())
