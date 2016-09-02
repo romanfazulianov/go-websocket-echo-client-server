@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -20,12 +21,13 @@ type ClientInfo struct {
 
 //Msg contain a message
 type Msg struct {
-	client *ClientInfo
-	sent   time.Time
-	text   string
+	Name string
+	Room string
+	Sent int
+	Text string
 }
 
-var client *ClientInfo
+var client ClientInfo
 
 type termScan bufio.Scanner
 
@@ -51,7 +53,7 @@ func fillInfo() {
 	if err != nil {
 		return
 	}
-	client = &ClientInfo{name, room}
+	client = ClientInfo{name: name, room: room}
 }
 
 //UserInputHandler is a func which reads the keybord input and tryes to send it
@@ -60,8 +62,17 @@ func UserInputHandler() {
 	for {
 		if input, err := scanLine(scanner); err == nil {
 			if ws != nil {
-				if _, err := ws.Write([]byte(input)); err != nil {
+				fmt.Println(client)
+				timestamp := time.Now().Nanosecond()
+				msg := Msg{Name: client.name, Room: client.room, Sent: timestamp, Text: input}
+				log.Printf("sending: %+v", msg)
+				data, err := json.Marshal(msg)
+				if err != nil {
 					log.Print(err)
+				} else {
+					if _, err := ws.Write(data); err != nil {
+						log.Print(err)
+					}
 				}
 			} else {
 				log.Print("Connection closed. Try later!")
@@ -73,13 +84,18 @@ func UserInputHandler() {
 //ServerAnswerHandler reads websocket connection output and log it into terminal
 func ServerAnswerHandler() {
 	for {
-		msg := make([]byte, 1024)
-		if _, err := ws.Read(msg); err != nil {
+		data := make([]byte, 1024)
+		n, err := ws.Read(data)
+		if err != nil {
 			log.Print("Connection closed...")
 			break
-		} else {
-			log.Printf("Received: %s", msg)
 		}
+		var msg Msg
+		err = json.Unmarshal(data[:n], &msg)
+		if err != nil {
+			fmt.Println("error:", err)
+		}
+		log.Printf("Received: %+v", msg)
 	}
 }
 

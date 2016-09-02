@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -8,6 +10,20 @@ import (
 )
 
 var cons []*websocket.Conn
+
+//ClientInfo contain the name and room of client
+type ClientInfo struct {
+	name string
+	room string
+}
+
+//Msg contain a message
+type Msg struct {
+	Name string
+	Room string
+	Sent int
+	Text string
+}
 
 // MultiServer sends the data received on the WebSocket to all connections.
 func MultiServer(ws *websocket.Conn) {
@@ -30,15 +46,21 @@ func splice(cons []*websocket.Conn, ws *websocket.Conn) []*websocket.Conn {
 
 func handleMessages(ws *websocket.Conn) {
 	for {
-		msg := make([]byte, 1024)
-		if _, err := ws.Read(msg); err != nil {
+		data := make([]byte, 1024)
+		n, err := ws.Read(data)
+		if err != nil {
 			ws.Close()
 			cons = splice(cons, ws)
 			break
 		}
-		log.Printf("Received: %s", msg)
+		var msg Msg
+		err = json.Unmarshal(data[:n], &msg)
+		if err != nil {
+			fmt.Println("error:", err)
+		}
+		fmt.Printf("%+v", msg)
 		for _, wsconn := range cons {
-			if _, err := wsconn.Write(msg); err != nil {
+			if _, err := wsconn.Write(data[:n]); err != nil {
 				wsconn.Close()
 				cons = splice(cons, wsconn)
 				break
