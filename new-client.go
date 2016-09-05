@@ -8,26 +8,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/romanfazulianov/go-websocket-echo-client-server/types"
 	"golang.org/x/net/websocket"
 )
 
 var ws *websocket.Conn
 
-//ClientInfo contain the name and room of client
-type ClientInfo struct {
-	name string
-	room string
-}
-
-//Msg contain a message
-type Msg struct {
-	Name string
-	Room string
-	Sent int
-	Text string
-}
-
-var client ClientInfo
+var client types.ClientInfo
 
 type termScan bufio.Scanner
 
@@ -53,7 +40,7 @@ func fillInfo() {
 	if err != nil {
 		return
 	}
-	client = ClientInfo{name: name, room: room}
+	client = types.ClientInfo{Name: name, Room: room}
 }
 
 //UserInputHandler is a func which reads the keybord input and tryes to send it
@@ -64,7 +51,7 @@ func UserInputHandler() {
 			if ws != nil {
 				fmt.Println(client)
 				timestamp := time.Now().Nanosecond()
-				msg := Msg{Name: client.name, Room: client.room, Sent: timestamp, Text: input}
+				msg := types.Msg{Name: client.Name, Room: client.Room, Sent: timestamp, Text: input}
 				log.Printf("sending: %+v", msg)
 				data, err := json.Marshal(msg)
 				if err != nil {
@@ -90,7 +77,7 @@ func ServerAnswerHandler() {
 			log.Print("Connection closed...")
 			break
 		}
-		var msg Msg
+		msg := types.Msg{}
 		err = json.Unmarshal(data[:n], &msg)
 		if err != nil {
 			fmt.Println("error:", err)

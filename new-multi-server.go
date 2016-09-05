@@ -6,24 +6,11 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/romanfazulianov/go-websocket-echo-client-server/types"
 	"golang.org/x/net/websocket"
 )
 
 var cons []*websocket.Conn
-
-//ClientInfo contain the name and room of client
-type ClientInfo struct {
-	name string
-	room string
-}
-
-//Msg contain a message
-type Msg struct {
-	Name string
-	Room string
-	Sent int
-	Text string
-}
 
 // MultiServer sends the data received on the WebSocket to all connections.
 func MultiServer(ws *websocket.Conn) {
@@ -53,7 +40,7 @@ func handleMessages(ws *websocket.Conn) {
 			cons = splice(cons, ws)
 			break
 		}
-		var msg Msg
+		msg := types.Msg{}
 		err = json.Unmarshal(data[:n], &msg)
 		if err != nil {
 			fmt.Println("error:", err)
